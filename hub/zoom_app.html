@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GooseHack Zoom App</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          sans-serif;
+        background: #0f1116;
+        color: #e9edf5;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        background-color: #0f1116;
+        background-image: linear-gradient(160deg, #111827 0%, #090b16 100%);
+      }
+
+      .app {
+        width: min(720px, 92vw);
+        margin: 40px auto;
+        padding: 32px;
+        background-color: rgba(17, 24, 39, 0.82);
+        border-radius: 16px;
+        box-shadow: 0 24px 48px rgba(8, 12, 24, 0.45);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 1.8rem;
+        letter-spacing: 0.01em;
+      }
+
+      .info-line {
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+        font-size: 0.95rem;
+      }
+
+      .info-label {
+        min-width: 140px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.75rem;
+        color: #86a1f8;
+      }
+
+      #activity-log {
+        margin: 0;
+        padding: 16px;
+        background: rgba(15, 23, 42, 0.65);
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        max-height: 180px;
+        overflow-y: auto;
+        list-style: none;
+      }
+
+      #activity-log li {
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+        color: #d1dcff;
+      }
+
+      #activity-log li[data-level='error'] {
+        color: #fda4af;
+      }
+
+      #activity-log li[data-level='success'] {
+        color: #a3e635;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section>
+        <h1>GooseHack Zoom Companion</h1>
+      </section>
+
+      <section class="info-grid">
+        <div class="info-line">
+          <span class="info-label">Screen Name</span>
+          <span id="user-screen-name">—</span>
+        </div>
+        <div class="info-line">
+          <span class="info-label">Agent Tunnel</span>
+          <span id="agent-tunnel">—</span>
+        </div>
+      </section>
+
+      <section>
+        <span class="info-label">Activity</span>
+        <ul id="activity-log"></ul>
+      </section>
+    </main>
+    <script src="https://appssdk.zoom.us/sdk.min.js"></script>
+    <script src="/zoom_app.js"></script>
+  </body>
+</html>

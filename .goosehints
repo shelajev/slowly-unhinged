@@ -1,0 +1,49 @@
+# GooseHack Development Hints
+
+This file contains a collection of hints, tricks, and lessons learned during the development of the GooseHack project.
+
+## Agent Instructions
+
+- **Update Planning Documents**: After making changes to the codebase, please update the `plan.md` and `architecture.md` files to reflect the new state of the project.
+- **No Interactive Commands**: Do not run any interactive commands. All commands should be runnable in a non-interactive way.
+- **Automatic Hub Deployment**: The `hub` service should be deployed automatically after any changes are made to it. Use the gcloud command provided below.
+- **Manual Verification**: Do not run the applications for testing purposes. I will perform all manual verifications.
+
+## GCP Project ID
+The GCP project ID is `semibigvms`.
+
+## Deploying to Google Cloud Run with Secrets
+**The Problem:** Your application works locally but fails on Cloud Run with errors like `invalid_client` or other credential-related issues.
+**The Cause:** The most likely cause is that your secrets (API keys, client secrets, etc.) are not available in the Cloud Run environment. The application code expects them as environment variables, but they have not been "injected" into the container.
+**The Solution:** You must explicitly configure your Cloud Run service to mount secrets from Google Secret Manager as environment variables.
+**The Command:** Use the `--update-secrets` flag when deploying your service:
+
+## Redeploying the Hub Service
+
+To redeploy the `hub` service to Google Cloud Run, use the following command:
+
+```bash
+gcloud run deploy slowlyunhinged-hub --source hub --project semibigvms --region us-central1 --allow-unauthenticated --quiet
+```
+
+**Details:**
+
+*   **Service:** `slowlyunhinged-hub`
+*   **Project:** `semibigvms`
+*   **Region:** `us-central1`
+*   **Source:** `hub` directory
+*   **Service URL:** https://slowlyunhinged-hub-54127830651.us-central1.run.app
+
+## Building the Companion App
+
+To create a distributable version of the companion app, run the following commands from the root of the project:
+
+```bash
+cd companion-app
+npm install
+npm run tauri build
+```
+
+The build output will be located in the `companion-app/src-tauri/target/release/bundle/` directory. For macOS, this will be a `.dmg` file.
+
+for development it's `npm run tauri dev` the user will run this manually. 

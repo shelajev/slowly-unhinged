@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GooseHack Companion</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <main class="container">
+      <section id="preflight-screen" class="preflight-screen">
+        <h1>Slowly Unhinged Companion</h1>
+        <p class="preflight-intro">
+          Running a quick setup to make sure everything is ready.
+        </p>
+        <div class="preflight-list">
+          <div id="preflight-docker" class="preflight-item" data-state="pending">
+            <div class="preflight-item-header">
+              <span class="preflight-item-title">Docker Desktop</span>
+              <span
+                id="preflight-docker-status"
+                class="preflight-item-status"
+              >
+                Pending…
+              </span>
+            </div>
+            <p id="preflight-docker-message" class="preflight-item-message"></p>
+          </div>
+          <div id="preflight-dmr" class="preflight-item" data-state="pending">
+            <div class="preflight-item-header">
+              <span class="preflight-item-title">Docker Model Runner</span>
+              <span id="preflight-dmr-status" class="preflight-item-status">
+                Pending…
+              </span>
+            </div>
+            <p id="preflight-dmr-message" class="preflight-item-message"></p>
+          </div>
+          <div
+            id="preflight-models"
+            class="preflight-item"
+            data-state="pending"
+          >
+            <div class="preflight-item-header">
+              <span class="preflight-item-title">Required Models</span>
+              <span
+                id="preflight-models-status"
+                class="preflight-item-status"
+              >
+                Pending…
+              </span>
+            </div>
+            <p id="preflight-models-message" class="preflight-item-message"></p>
+          </div>
+          <div
+            id="preflight-permissions"
+            class="preflight-item"
+            data-state="pending"
+          >
+            <div class="preflight-item-header">
+              <span class="preflight-item-title">Camera &amp; Microphone</span>
+              <span
+                id="preflight-permissions-status"
+                class="preflight-item-status"
+              >
+                Pending…
+              </span>
+            </div>
+            <p
+              id="preflight-permissions-message"
+              class="preflight-item-message"
+            ></p>
+          </div>
+        </div>
+        <div class="preflight-actions">
+          <button id="preflight-permissions-btn" disabled>
+            Grant Camera &amp; Microphone Access
+          </button>
+          <button id="preflight-retry-btn" class="secondary-btn hidden">
+            Retry Checks
+          </button>
+        </div>
+        <p id="preflight-status" class="status-text"></p>
+      </section>
+
+      <section id="app-content" class="app-content hidden">
+        <section class="controls">
+          <div class="wheels-wrapper">
+            <div id="screen-name-wheels" class="wheels-container"></div>
+            <p
+              id="screen-name-preview"
+              class="status-text screen-name-preview"
+            ></p>
+          </div>
+          <div class="control-buttons">
+            <button id="start-btn">Start</button>
+            <button id="stop-btn">Stop</button>
+            <button
+              id="transcribe-btn"
+              type="button"
+              class="transcribe-btn"
+            >
+              Record &amp; Transcribe
+            </button>
+          </div>
+        </section>
+
+        <section class="media-grid">
+          <div class="panel video-panel">
+            <h2>Camera Preview</h2>
+            <video
+              id="camera-preview"
+              autoplay
+              muted
+              playsinline
+            ></video>
+            <p id="camera-status" class="status-text"></p>
+            <div class="background-image-card">
+              <h3>Generated Background Preview</h3>
+              <div class="background-image-frame">
+                <img
+                  id="background-image-preview"
+                  class="background-image-preview"
+                  alt="Generated virtual background preview"
+                  loading="lazy"
+                />
+              </div>
+              <p
+                id="background-image-status"
+                class="status-text background-image-status"
+              ></p>
+            </div>
+          </div>
+
+          <div class="panel audio-panel">
+            <h2>Audio Activity</h2>
+
+            <div class="waveform-card">
+              <div class="waveform-header">
+                <span>Microphone</span>
+                <span class="dot live" aria-hidden="true"></span>
+              </div>
+              <canvas
+                id="mic-waveform"
+                width="320"
+                height="100"
+                aria-label="Microphone audio waveform"
+              ></canvas>
+              <p id="mic-status" class="status-text"></p>
+            </div>
+            <div class="background-card">
+              <h3>Virtual Background Prompt</h3>
+              <p id="background-prompt" class="status-text"></p>
+            </div>
+          </div>
+
+          <div class="panel log-panel">
+            <h2>Event Log</h2>
+            <div
+              id="event-log"
+              class="log-list"
+              role="log"
+              aria-live="polite"
+              aria-relevant="additions"
+            ></div>
+          </div>
+        </section>
+
+        <p id="status-msg" class="status-text global-status"></p>
+      </section>
+    </main>
+  </body>
+</html>
