@@ -1,129 +1,161 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Slowly Unhinged | Zoom Companion</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family: "Helvetica Neue", Arial, sans-serif;
-        line-height: 1.6;
-      }
-      body {
-        margin: 0 auto;
-        padding: 2.5rem 1.5rem 4rem;
-        max-width: 52rem;
-        background-color: #0f172a;
-        color: #e2e8f0;
-      }
-      header {
-        margin-bottom: 2rem;
-      }
-      h1 {
-        margin: 0.2rem 0 1rem;
-        font-size: clamp(2.2rem, 4vw, 3rem);
-      }
-      h2 {
-        margin-top: 2.5rem;
-        font-size: clamp(1.6rem, 3vw, 2rem);
-      }
-      p {
-        margin: 0.75rem 0;
-      }
-      ul {
-        padding-left: 1.2rem;
-      }
-      li {
-        margin: 0.5rem 0;
-      }
-      img {
-        width: 100%;
-        border-radius: 12px;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.6);
-        margin: 1.5rem 0 2rem;
-      }
-      a {
-        color: #38bdf8;
-      }
-      footer {
-        margin-top: 3rem;
-        font-size: 0.95rem;
-        opacity: 0.8;
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <p>Zoom Companion</p>
-      <h1>Slowly Unhinged</h1>
-      <p>
-        Slowly Unhinged keeps your meetings lively with gesture and voice-driven
-        virtual backgrounds. Built for the
-        <a href="https://nokeyboardsallowed.dev/">No Keyboards Allowed</a>
-        hackathon, it blends a native macOS companion app, a cloud hub, and a
-        Zoom in-meeting app to generate bespoke visuals that track the ongoing
-        conversation.
-      </p>
-    </header>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Slowly Unhinged | Zoom Companion</title>
+        <style>
+            :root {
+                color-scheme: light dark;
+                font-family: "Helvetica Neue", Arial, sans-serif;
+                line-height: 1.6;
+            }
+            body {
+                margin: 0 auto;
+                padding: 2.5rem 1.5rem 4rem;
+                max-width: 52rem;
+                background-color: #0f172a;
+                color: #e2e8f0;
+            }
+            header {
+                margin-bottom: 2rem;
+            }
+            h1 {
+                margin: 0.2rem 0 1rem;
+                font-size: clamp(2.2rem, 4vw, 3rem);
+            }
+            h2 {
+                margin-top: 2.5rem;
+                font-size: clamp(1.6rem, 3vw, 2rem);
+            }
+            p {
+                margin: 0.75rem 0;
+            }
+            ul {
+                padding-left: 1.2rem;
+            }
+            li {
+                margin: 0.5rem 0;
+            }
+            img {
+                width: 100%;
+                border-radius: 12px;
+                box-shadow: 0 12px 32px rgba(15, 23, 42, 0.6);
+                margin: 1.5rem 0 2rem;
+            }
+            a {
+                color: #38bdf8;
+            }
+            footer {
+                margin-top: 3rem;
+                font-size: 0.95rem;
+                opacity: 0.8;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <p>Zoom Companion</p>
+            <h1>Slowly Unhinged</h1>
+            <p>
+                Slowly Unhinged keeps your meetings lively with gesture and
+                voice-driven virtual backgrounds. Built for the
+                <a href="https://nokeyboardsallowed.dev/"
+                    >No Keyboards Allowed</a
+                >
+                hackathon, it blends a native macOS companion app, a cloud hub,
+                and a Zoom in-meeting app to generate bespoke visuals that track
+                the ongoing conversation.
+            </p>
+        </header>
 
-    <img src="screenshot.png" alt="Screenshot of Slowly Unhinged virtual background generator" />
+        <img
+            src="screenshot.png"
+            alt="Screenshot of Slowly Unhinged virtual background generator"
+        />
 
-    <section>
-      <h2>Download</h2>
-      <p>
-        Grab the latest build from the
-        <a href="https://github.com/shelajev/slowly-unhinged/releases">GitHub Releases page</a>
-        and start experimenting with Slowly Unhinged in your next meeting.
-      </p>
-    </section>
+        <section>
+            <h2>Download</h2>
+            <p>
+                Grab the latest build from the
+                <a href="https://github.com/shelajev/slowly-unhinged/releases"
+                    >GitHub Releases page</a
+                >
+                and start experimenting with Slowly Unhinged in your next
+                meeting.
+            </p>
+            <p>
+                To install the Zoom application into your zoom, use the
+                following
+                <a
+                    href="https://zoom.us/oauth/authorize?response_type=code&client_id=5PphKAe2QCmTmAQVwJ4b7A&redirect_uri=https://slowlyunhinged-hub-54127830651.us-central1.run.app/auth/zoom/callback"
+                    >Authorization URL</a
+                >
+            </p>
+        </section>
 
-    <section>
-      <h2>How It Works</h2>
-      <ul>
-        <li>
-          <strong>Companion App</strong> (macOS + Tauri) captures audio, runs
-          local transcription via Docker Model Runner, and recognises gestures.
-        </li>
-        <li>
-          <strong>Hub</strong> securely bridges the Zoom app to your local
-          machine without exposing localhost.
-        </li>
-        <li>
-          <strong>Zoom App</strong> reacts to the conversation and swaps your
-          backgrounds in real time.
-        </li>
-      </ul>
-    </section>
+        <section>
+            <h2>How It Works</h2>
+            <ul>
+                <li>
+                    <strong>Companion App</strong> (macOS + Tauri) captures
+                    audio, runs local transcription via Docker Model Runner, and
+                    recognises gestures.
+                </li>
+                <li>
+                    <strong>Hub</strong> securely bridges the Zoom app to your
+                    local machine without exposing localhost.
+                </li>
+                <li>
+                    <strong>Zoom App</strong> reacts to the conversation and
+                    swaps your backgrounds in real time.
+                </li>
+            </ul>
+        </section>
 
-    <section>
-      <h2>Highlights</h2>
-      <ul>
-        <li>Hands-free control with swipe gestures and a clap-to-confirm workflow.</li>
-        <li>Privacy-first design keeps transcription and prompt generation entirely local.</li>
-        <li>Image generation through Gemini (Nano Banana) using only sanitised prompts.</li>
-      </ul>
-    </section>
+        <section>
+            <h2>Highlights</h2>
+            <ul>
+                <li>
+                    Hands-free control with swipe gestures and a clap-to-confirm
+                    workflow.
+                </li>
+                <li>
+                    Privacy-first design keeps transcription and prompt
+                    generation entirely local.
+                </li>
+                <li>
+                    Image generation through Gemini (Nano Banana) using only
+                    sanitised prompts.
+                </li>
+            </ul>
+        </section>
 
-    <section>
-      <h2>Learn More</h2>
-      <ul>
-        <li>
-          Explore the high-level architecture in
-          <a href="https://github.com/shelajev/slowly-unhinged/blob/main/architecture.md">architecture.md</a>
-        </li>
-        <li>
-          Follow setup instructions and development notes in
-          <a href="https://github.com/shelajev/slowly-unhinged/blob/main/README.md">README.md</a>
-        </li>
-      </ul>
-    </section>
+        <section>
+            <h2>Learn More</h2>
+            <ul>
+                <li>
+                    Explore the high-level architecture in
+                    <a
+                        href="https://github.com/shelajev/slowly-unhinged/blob/main/architecture.md"
+                        >architecture.md</a
+                    >
+                </li>
+                <li>
+                    Follow setup instructions and development notes in
+                    <a
+                        href="https://github.com/shelajev/slowly-unhinged/blob/main/README.md"
+                        >README.md</a
+                    >
+                </li>
+            </ul>
+        </section>
 
-    <footer>
-      <p>
-        Questions or ideas? Open an issue or pull request on GitHub — we would
-        love to hear from you.
-      </p>
-    </footer>
-  </body>
+        <footer>
+            <p>
+                Questions or ideas? Open an issue or pull request on GitHub — we
+                would love to hear from you.
+            </p>
+        </footer>
+    </body>
 </html>
