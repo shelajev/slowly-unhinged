@@ -77,32 +77,11 @@ button:active {
   background-color: #e8e8e8;
 }
 
-.transcribe-btn {
-  background-color: #ffe5e5;
-  border-color: #f4bcbc;
-  color: #a32020;
-}
-
-.transcribe-btn:hover {
-  border-color: #d32f2f;
-}
-
-.transcribe-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.transcribe-btn.recording {
-  background-color: #d32f2f;
-  border-color: #b71c1c;
-  color: #ffffff;
-  box-shadow:
-    0 0 0 2px rgba(183, 28, 28, 0.2),
-    0 4px 12px rgba(211, 47, 47, 0.3);
-}
-
-.transcribe-btn.recording:hover {
-  border-color: #b71c1c;
+.control-instructions {
+  margin: 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: rgba(15, 15, 15, 0.78);
 }
 
 input,
@@ -132,18 +111,8 @@ button {
   button:active {
     background-color: #0f0f0f69;
   }
-  .transcribe-btn {
-    background-color: rgba(211, 47, 47, 0.18);
-    border-color: rgba(239, 83, 80, 0.5);
-    color: #ffb3b3;
-  }
-  .transcribe-btn.recording {
-    background-color: #ef5350;
-    border-color: #e53935;
-    color: #0f0f0f;
-    box-shadow:
-      0 0 0 2px rgba(229, 57, 53, 0.25),
-      0 4px 12px rgba(229, 57, 53, 0.35);
+  .control-instructions {
+    color: rgba(246, 246, 246, 0.85);
   }
   .log-list {
     background: rgba(0, 0, 0, 0.35);
@@ -769,13 +738,6 @@ button {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-}
-
-.control-buttons {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-  justify-content: center;
 }
 
 .screen-name-preview {

@@ -24,6 +24,7 @@ struct BackgroundLatestQuery {
 
 pub async fn run(state: Arc<AppState>) -> Result<(), String> {
     let router = Router::new()
+        .route("/", get(root_health_check))
         .route("/background/latest", get(background_latest))
         .route("/internal/secrets/nanobanana", post(set_nanobanana_secret))
         .with_state(state);
@@ -79,6 +80,10 @@ async fn background_latest(
             return build_response(None, version, StatusCode::NO_CONTENT);
         }
     }
+}
+
+async fn root_health_check() -> &'static str {
+    "slowly unhinged tunnel working"
 }
 
 fn build_response(

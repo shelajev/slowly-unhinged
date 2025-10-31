@@ -26,9 +26,6 @@ type BackgroundPromptDecision =
       rawText: string;
     };
 
-let startBtnEl: HTMLButtonElement | null;
-let stopBtnEl: HTMLButtonElement | null;
-let transcribeBtnEl: HTMLButtonElement | null;
 let statusMsgEl: HTMLElement | null;
 let videoEl: HTMLVideoElement | null;
 let cameraStatusEl: HTMLElement | null;
@@ -59,6 +56,8 @@ let micAudioContext: AudioContext | null = null;
 let permissionsGranted = false;
 let isTranscriptionInProgress = false;
 let isBackgroundImageInProgress = false;
+let agentActive = false;
+let agentTransitionInProgress = false;
 
 const MEDIAPIPE_WASM_ROOT =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm";
@@ -168,7 +167,6 @@ let autoTranscriptionEnabled = false;
 let autoTranscriptionTimer: number | null = null;
 let autoAwaitingBackgroundImage = false;
 let wheelsLocked = false;
-let gesturesLocked = false;
 
 const PREFLIGHT_KEYS = ["docker", "dmr", "models", "permissions"] as const;
 type PreflightKey = (typeof PREFLIGHT_KEYS)[number];
@@ -254,15 +252,6 @@ function setTextContent(element: HTMLElement | null, text: string) {
   }
 }
 
-function setButtonDisabled(
-  button: HTMLButtonElement | null,
-  disabled: boolean,
-) {
-  if (button) {
-    button.disabled = disabled;
-  }
-}
-
 function logEvent(message: string, level: "info" | "error" = "info") {
   const timestamp = new Date().toLocaleTimeString([], LOG_TIME_OPTIONS);
   const formatted = `[${timestamp}] ${message}`;
@@ -308,30 +297,6 @@ function setWheelsLocked(locked: boolean) {
   updateActiveWheelStatus();
   if (changed) {
     logEvent(locked ? "[Wheels] Wheel controls locked." : "[Wheels] Wheel controls unlocked.");
-  }
-}
-
-function setGesturesLocked(locked: boolean) {
-  if (gesturesLocked === locked) {
-    if (locked) {
-      setGestureStatus("Gestures locked while agent active.");
-    }
-    return;
-  }
-  const wasLocked = gesturesLocked;
-  gesturesLocked = locked;
-  if (locked) {
-    stopGestureRecognition();
-    setGestureStatus("Gestures locked while agent active.");
-    logEvent("[Gestures] Gesture recognition locked.");
-  } else if (wasLocked) {
-    if (permissionsGranted) {
-      setGestureStatus("Gestures ready.");
-      void startGestureRecognition();
-    } else {
-      setGestureStatus("Gestures inactive.");
-    }
-    logEvent("[Gestures] Gesture recognition unlocked.");
   }
 }
 
@@ -1246,25 +1211,9 @@ async function triggerTranscriptionCapture() {
     return;
   }
 
-  if (!transcribeBtnEl) {
-    isTranscriptionInProgress = false;
-    if (autoTranscriptionEnabled) {
-      scheduleAutoTranscription(
-        AUTO_TRANSCRIPTION_RETRY_DELAY_MS,
-        "transcription control missing",
-      );
-    }
-    return;
-  }
-
-  const originalButtonLabel = transcribeBtnEl.textContent ?? "";
-
   try {
     setTextContent(micStatusEl, "Recording 12-second microphone sample...");
     logEvent("Recording 12-second microphone sample…");
-    transcribeBtnEl.disabled = true;
-    transcribeBtnEl.classList.add("recording");
-    transcribeBtnEl.textContent = "Recording...";
 
     const recordingStartedAt = performance.now();
     const audioBlob = await recordMicrophoneSample(
@@ -1275,8 +1224,6 @@ async function triggerTranscriptionCapture() {
       `[Transcription] Recorded blob size=${audioBlob.size} bytes in ${recordingDurationMs.toFixed(0)} ms (mimeType=${audioBlob.type}).`,
     );
 
-    transcribeBtnEl.classList.remove("recording");
-    transcribeBtnEl.textContent = "Transcribing...";
     logEvent("Uploading audio sample for transcription…");
 
     setTextContent(micStatusEl, "Transcribing sample...");
@@ -1377,12 +1324,6 @@ async function triggerTranscriptionCapture() {
     );
     setTextContent(micStatusEl, `Transcription failed: ${formatError(error)}`);
   } finally {
-    if (transcribeBtnEl) {
-      transcribeBtnEl.disabled = false;
-      transcribeBtnEl.classList.remove("recording");
-      transcribeBtnEl.textContent =
-        originalButtonLabel || "Record & Transcribe";
-    }
     isTranscriptionInProgress = false;
     if (autoTranscriptionEnabled && !autoAwaitingBackgroundImage) {
       scheduleAutoTranscription(
@@ -1741,7 +1682,7 @@ function handleClapDetection(centers: HandObservation[], now: number) {
       gestureState.lastClapTime = now;
       lastTwoHandDistance = null;
       void handleClapSubmit();
-      setGestureStatus("Clap detected – submitting", now);
+      setGestureStatus("Clap detected.", now);
       return true;
     }
   }
@@ -1811,11 +1752,6 @@ async function startGestureRecognition() {
     return;
   }
 
-  if (gesturesLocked) {
-    setGestureStatus("Gestures locked while agent active.");
-    return;
-  }
-
   if (!videoEl) {
     return;
   }
@@ -1844,11 +1780,7 @@ function stopGestureRecognition() {
   handHistories.Right = [];
   lastTwoHandDistance = null;
   if (permissionsGranted) {
-    if (gesturesLocked) {
-      setGestureStatus("Gestures locked while agent active.");
-    } else {
-      setGestureStatus("Gestures paused.");
-    }
+    setGestureStatus("Gestures paused.");
   } else {
     setGestureStatus("Gestures inactive.");
   }
@@ -1858,10 +1790,6 @@ function processHandLandmarks(
   result: HandLandmarkerResult | undefined,
   now: number,
 ) {
-  if (gesturesLocked) {
-    return;
-  }
-
   if (!result || !result.landmarks || result.landmarks.length === 0) {
     clearHandHistory("Left");
     clearHandHistory("Right");
@@ -1933,6 +1861,7 @@ function processHandLandmarks(
   }
 
   let gestureHandled = false;
+  const wheelsLockedForAgent = agentActive;
 
   if (now - gestureState.lastWheelAdjustTime > WHEEL_ADJUST_COOLDOWN_MS) {
     for (const { label } of observations) {
@@ -1943,6 +1872,12 @@ function processHandLandmarks(
         Math.abs(displacement.dy) >= SWIPE_MIN_DISPLACEMENT &&
         Math.abs(displacement.dy) > Math.abs(displacement.dx)
       ) {
+        if (wheelsLockedForAgent) {
+          setGestureStatus("Wheel controls locked while agent running.", now);
+          gestureState.lastWheelAdjustTime = now;
+          gestureHandled = true;
+          break;
+        }
         if (displacement.dy <= -SWIPE_MIN_DISPLACEMENT) {
           adjustWheel(activeWheelIndex, -1);
           setGestureStatus("Wheel up", now);
@@ -1970,6 +1905,12 @@ function processHandLandmarks(
         Math.abs(displacement.dx) >= SWIPE_MIN_DISPLACEMENT &&
         Math.abs(displacement.dx) > Math.abs(displacement.dy)
       ) {
+        if (wheelsLockedForAgent) {
+          setGestureStatus("Wheel controls locked while agent running.", now);
+          gestureState.lastWheelSwitchTime = now;
+          gestureHandled = true;
+          break;
+        }
         if (displacement.dx <= -SWIPE_MIN_DISPLACEMENT) {
           setActiveWheel(activeWheelIndex + 1);
           setGestureStatus("Next wheel", now);
@@ -1997,10 +1938,19 @@ function processHandLandmarks(
 }
 
 async function handleClapSubmit() {
-  if (!startBtnEl || startBtnEl.disabled || gesturesLocked) {
+  if (agentTransitionInProgress) {
+    logEvent("Ignoring clap while agent is transitioning.");
+    setGestureStatus("Agent busy – please wait.");
     return;
   }
-  await registerAgent();
+
+  if (agentActive) {
+    setGestureStatus("Clap detected – stopping agent.");
+    await stopAgent();
+  } else {
+    setGestureStatus("Clap detected – starting agent.");
+    await registerAgent();
+  }
 }
 
 async function startCameraAndMic(): Promise<boolean> {
@@ -2070,11 +2020,7 @@ async function startCameraAndMic(): Promise<boolean> {
       logEvent("No microphone track detected in media stream.", "error");
     }
 
-    if (!gesturesLocked) {
-      void startGestureRecognition();
-    } else {
-      setGestureStatus("Gestures locked while agent active.");
-    }
+    void startGestureRecognition();
     logEvent("Camera and microphone streams ready.");
 
     return true;
@@ -2132,7 +2078,18 @@ async function stopCameraAndMic() {
 }
 
 async function registerAgent() {
-  if (!statusMsgEl || !startBtnEl || !stopBtnEl) {
+  if (!statusMsgEl) {
+    return;
+  }
+
+  if (agentTransitionInProgress) {
+    logEvent("Agent start requested while a transition is already in progress.");
+    return;
+  }
+
+  if (agentActive) {
+    logEvent("Agent start requested but agent is already running.");
+    setGestureStatus("Agent already running – clap to stop.");
     return;
   }
 
@@ -2177,12 +2134,10 @@ async function registerAgent() {
     return;
   }
 
+  agentTransitionInProgress = true;
   setTextContent(statusMsgEl, `Starting agent for ${screenName}...`);
   logEvent(`Starting agent for ${screenName}…`);
-  setButtonDisabled(startBtnEl, true);
-  setButtonDisabled(stopBtnEl, false);
   setWheelsLocked(true);
-  setGesturesLocked(true);
 
   try {
     const response = await invoke("register_agent", {
@@ -2190,25 +2145,40 @@ async function registerAgent() {
       screen_name: screenName,
     });
     const message = String(response);
+    agentActive = true;
     setTextContent(statusMsgEl, message);
     logEvent(message);
+    setGestureStatus("Agent running – clap to stop.");
     startAutoTranscriptionLoop(500);
   } catch (error) {
     setWheelsLocked(false);
-    setGesturesLocked(false);
     const formattedError = `Agent start failed: ${formatError(error)}`;
     setTextContent(statusMsgEl, `Error: ${formatError(error)}`);
     logEvent(formattedError, "error");
-    setButtonDisabled(startBtnEl, false);
-    setButtonDisabled(stopBtnEl, true);
+    setGestureStatus("Gestures ready.");
+  } finally {
+    agentTransitionInProgress = false;
   }
 }
 
 async function stopAgent() {
-  if (!statusMsgEl || !startBtnEl || !stopBtnEl) {
+  if (!statusMsgEl) {
     return;
   }
 
+  if (agentTransitionInProgress) {
+    logEvent("Agent stop requested while a transition is already in progress.");
+    return;
+  }
+
+  if (!agentActive) {
+    logEvent("Agent stop requested but agent is not running.");
+    setGestureStatus("Agent already stopped – clap to start.");
+    return;
+  }
+
+  const wasAutoEnabled = autoTranscriptionEnabled;
+  agentTransitionInProgress = true;
   stopAutoTranscriptionLoop();
   setTextContent(statusMsgEl, "Stopping agent...");
   logEvent("Stopping agent…");
@@ -2216,18 +2186,21 @@ async function stopAgent() {
   try {
     const response = await invoke("stop_agent");
     const message = String(response);
+    agentActive = false;
     setTextContent(statusMsgEl, message);
     logEvent(message);
     setWheelsLocked(false);
-    setGesturesLocked(false);
+    setGestureStatus("Agent stopped – clap to start.");
   } catch (error) {
     const formattedError = `Agent stop failed: ${formatError(error)}`;
     setTextContent(statusMsgEl, `Error: ${formatError(error)}`);
     logEvent(formattedError, "error");
+    setGestureStatus("Agent still running – clap again to retry.");
+    if (wasAutoEnabled && !autoTranscriptionEnabled) {
+      startAutoTranscriptionLoop(AUTO_TRANSCRIPTION_RETRY_DELAY_MS);
+    }
   } finally {
-    stopAutoTranscriptionLoop();
-    setButtonDisabled(startBtnEl, false);
-    setButtonDisabled(stopBtnEl, true);
+    agentTransitionInProgress = false;
   }
 }
 
@@ -2258,8 +2231,6 @@ async function ensurePermissions(): Promise<boolean> {
     setPreflightStatusText(
       "All checks passed. Opening the companion experience…",
     );
-    setButtonDisabled(startBtnEl, false);
-    setButtonDisabled(stopBtnEl, true);
     logEvent("Camera and microphone permissions granted.");
     return true;
   }
@@ -2297,9 +2268,6 @@ async function initializeApp() {
   const query = <T extends HTMLElement>(id: string): T | null =>
     document.getElementById(id) as T | null;
 
-  startBtnEl = query<HTMLButtonElement>("start-btn");
-  stopBtnEl = query<HTMLButtonElement>("stop-btn");
-  transcribeBtnEl = query<HTMLButtonElement>("transcribe-btn");
   statusMsgEl = query("status-msg");
   videoEl = query<HTMLVideoElement>("camera-preview");
   cameraStatusEl = query("camera-status");
@@ -2354,15 +2322,6 @@ async function initializeApp() {
     preflightElements[key].message = query(ids.message);
   });
 
-  startBtnEl?.addEventListener("click", () => {
-    void registerAgent();
-  });
-  stopBtnEl?.addEventListener("click", () => {
-    void stopAgent();
-  });
-  transcribeBtnEl?.addEventListener("click", () => {
-    void triggerTranscriptionCapture();
-  });
   preflightPermissionsBtnEl?.addEventListener("click", () => {
     void handlePreflightPermissions();
   });
@@ -2370,8 +2329,6 @@ async function initializeApp() {
     void runPreflightChecks();
   });
 
-  setButtonDisabled(startBtnEl, true);
-  setButtonDisabled(stopBtnEl, true);
   toggleAppVisibility(false);
 
   initializeWheels();
