@@ -206,6 +206,7 @@ async fn start_and_register_agent(
     ensure_required_models(&http_client, &settings).await?;
 
     let (cloudflared_container, tunnel_url) = docker::start_cloudflared(BACKEND_PORT).await?;
+    sleep(Duration::from_secs(3)).await; // allow DNS propagation so the Hub can resolve the tunnel
 
     let mut guard = app_state.cloudflared_container.lock().await;
     *guard = Some(cloudflared_container);
