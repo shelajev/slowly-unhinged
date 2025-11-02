@@ -11,7 +11,7 @@ The system consists of three distinct components that work in concert:
     *   Handling the Zoom OAuth flow to authenticate users.
     *   Acting as a **matchmaker**: storing and retrieving the live tunnel URL for each registered user, keyed by their Zoom screen name.
     *   **Proxying background imagery** from the companion's Cloudflare tunnel to the Zoom App so the webview never calls the tunnel domain directly (avoiding content-blocker rules).
-    *   Brokering the default nanobanana API key from Secret Manager and delivering it over the tunnel when an agent requests it.
+    *   (Temporarily disabled until 2024-11-14) Brokering the default nanobanana API key from Secret Manager and delivering it over the tunnel when an agent requests it.
     *   Tracking each agent's **last seen** activity and expiring registrations after five minutes of inactivity rather than five minutes from initial registration.
 
 2.  **The Local Agent (Native Companion App):** A native macOS application (built with Tauri) that the user installs. It runs silently in the background and manages the user's local processing infrastructure. Its responsibilities are:
@@ -19,7 +19,7 @@ The system consists of three distinct components that work in concert:
     *   Managing the lifecycle of the local Docker containers using the `testcontainers` Rust library.
     *   Starting a Cloudflare Tunnel to create a secure, public URL for the local services.
     *   **Registering** its live tunnel URL with the Central Hub, associating it with the user's screen name.
-    *   Keeping the nanobanana key purely in memory, preferring a Hub-supplied default when no user override is configured.
+    *   Keeping the nanobanana key purely in memory and now requiring that a local key be configured before the companion completes preflight.
     *   Capturing short microphone samples, running local transcription, and generating virtual background prompts that are surfaced in the Companion UI.
 
 3.  **The Zoom Client (Zoom App Frontend):** A standard web application (HTML/JS/CSS) that runs in a webview inside the Zoom client. This is the user-facing component during a meeting. Its responsibilities are:
@@ -47,7 +47,7 @@ The system consists of three distinct components that work in concert:
     *   **Companion HTTP API:** Axum (Rust) served from within the Tauri process.
     *   **Inference Runtime:** Docker Model Runner (llama.cpp) exposing a chat-completions API on `http://localhost:12434`.
         *   **Speech-to-Text Model:** `hf.co/ggml-org/ultravox-v0_5-llama-3_1-8b-gguf`.
-        *   **Background Prompt Model:** `hf.co/unsloth/gemma-3n-e2b-it-gguf:q8_k_xl`.
+        *   **Background Prompt Model:** `ai/qwen3-vl:2B-UD-Q4_K_XL`.
     *   **Tunnel:** `cloudflare/cloudflared` (in Docker).
 *   **Zoom Client (Frontend):**
     *   **Framework:** Zoom Apps SDK (JavaScript).
@@ -79,7 +79,7 @@ The system consists of three distinct components that work in concert:
 9.  Replace speaker monitor prototype with a unified event log panel covering permissions, transcription, and agent lifecycle events. *(Completed: full-width log pane with real-time updates.)*
 10.  Feed captured transcripts into a background prompt generator model hosted in Docker Model Runner and surface the result in the UI. *(Completed: Gemma prompt call, logging, and virtual background prompt panel.)*
 11.  Call Gemini (`gemini-2.5-flash-image`) with the generated prompt, request a 16:9 render, and display the returned preview beneath the camera feed. *(Completed: Tauri-side HTTPS integration, event logging, and UI card with image preview.)*
-12.  Figure out secure Gemini key distribution so the desktop app does not require a manually provisioned key. *(Completed: Hub delivers the managed nanobanana key by default, while still honoring user-supplied overrides.)*
+12.  Figure out secure Gemini key distribution so the desktop app does not require a manually provisioned key. *(Temporarily paused: Hub delivery is disabled until 2024-11-14; the companion enforces a locally supplied key.)*
 
 ### Milestone 3: The Zoom Client & Local Backend
 

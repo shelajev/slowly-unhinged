@@ -19,10 +19,7 @@
           <div id="preflight-docker" class="preflight-item" data-state="pending">
             <div class="preflight-item-header">
               <span class="preflight-item-title">Docker Desktop</span>
-              <span
-                id="preflight-docker-status"
-                class="preflight-item-status"
-              >
+              <span id="preflight-docker-status" class="preflight-item-status">
                 Pending…
               </span>
             </div>
@@ -37,21 +34,33 @@
             </div>
             <p id="preflight-dmr-message" class="preflight-item-message"></p>
           </div>
+          <div id="preflight-models" class="preflight-item" data-state="pending">
+            <div class="preflight-item-header">
+              <span class="preflight-item-title">Required Models</span>
+              <span id="preflight-models-status" class="preflight-item-status">
+                Pending…
+              </span>
+            </div>
+            <p id="preflight-models-message" class="preflight-item-message"></p>
+          </div>
           <div
-            id="preflight-models"
+            id="preflight-nanobanana"
             class="preflight-item"
             data-state="pending"
           >
             <div class="preflight-item-header">
-              <span class="preflight-item-title">Required Models</span>
+              <span class="preflight-item-title">Nano Banana API Key</span>
               <span
-                id="preflight-models-status"
+                id="preflight-nanobanana-status"
                 class="preflight-item-status"
               >
                 Pending…
               </span>
             </div>
-            <p id="preflight-models-message" class="preflight-item-message"></p>
+            <p
+              id="preflight-nanobanana-message"
+              class="preflight-item-message"
+            ></p>
           </div>
           <div
             id="preflight-permissions"
@@ -73,12 +82,22 @@
             ></p>
           </div>
         </div>
+        <div class="preflight-log-section">
+          <h2 class="preflight-log-title">Activity Log</h2>
+          <div
+            id="preflight-log"
+            class="log-list preflight-log"
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+          ></div>
+        </div>
         <div class="preflight-actions">
           <button id="preflight-permissions-btn" disabled>
             Grant Camera &amp; Microphone Access
           </button>
-          <button id="preflight-retry-btn" class="secondary-btn hidden">
-            Retry Checks
+          <button id="preflight-retry-btn" class="secondary-btn" disabled>
+            Re-run Checks
           </button>
         </div>
         <p id="preflight-status" class="status-text"></p>

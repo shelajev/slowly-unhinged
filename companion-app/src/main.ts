@@ -45,6 +45,7 @@ let wheelsContainerEl: HTMLElement | null;
 let gestureStatusEl: HTMLElement | null;
 let activeWheelStatusEl: HTMLElement | null;
 let logContainerEl: HTMLElement | null;
+let preflightLogEl: HTMLElement | null;
 
 let cameraStream: MediaStream | null = null;
 
@@ -76,6 +77,7 @@ const FINGER_EXTENSION_MIN_DELTA = 0.015;
 const PALM_OPEN_MIN_AVG_TIP_DISTANCE = 0.18;
 const WHEEL_STATE_SAVE_DELAY_MS = 400;
 const MAX_LOG_ENTRIES = 200;
+const PREFLIGHT_MAX_LOG_ENTRIES = 50;
 const LOG_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   hour12: false,
   hour: "2-digit",
@@ -90,7 +92,7 @@ const TRANSCRIPTION_ENDPOINT =
   "http://localhost:12434/engines/llama.cpp/v1/chat/completions";
 const DMR_BASE_URL = "http://localhost:12434";
 let TRANSCRIPTION_MODEL = "";
-let BACKGROUND_PROMPT_MODEL = "";
+let BACKGROUND_PROMPT_MODEL = "ai/qwen3-vl:2B-UD-Q4_K_XL";
 
 type Settings = {
   modelTranscription?: string;
@@ -168,7 +170,13 @@ let autoTranscriptionTimer: number | null = null;
 let autoAwaitingBackgroundImage = false;
 let wheelsLocked = false;
 
-const PREFLIGHT_KEYS = ["docker", "dmr", "models", "permissions"] as const;
+const PREFLIGHT_KEYS = [
+  "docker",
+  "dmr",
+  "models",
+  "nanobanana",
+  "permissions",
+] as const;
 type PreflightKey = (typeof PREFLIGHT_KEYS)[number];
 type PreflightState = "pending" | "running" | "waiting" | "success" | "error";
 
@@ -190,6 +198,7 @@ const preflightElements: Record<PreflightKey, PreflightElements> = {
   docker: { row: null, status: null, message: null },
   dmr: { row: null, status: null, message: null },
   models: { row: null, status: null, message: null },
+  nanobanana: { row: null, status: null, message: null },
   permissions: { row: null, status: null, message: null },
 };
 
@@ -197,6 +206,7 @@ let preflightState: Record<PreflightKey, PreflightState> = {
   docker: "pending",
   dmr: "pending",
   models: "pending",
+  nanobanana: "pending",
   permissions: "pending",
 };
 let preflightInProgress = false;
@@ -252,6 +262,33 @@ function setTextContent(element: HTMLElement | null, text: string) {
   }
 }
 
+function appendLogEntry(
+  container: HTMLElement | null,
+  text: string,
+  level: "info" | "error",
+  maxEntries: number,
+) {
+  if (!container) {
+    return;
+  }
+  const entry = document.createElement("div");
+  entry.className = "log-entry";
+  if (level === "error") {
+    entry.classList.add("log-entry-error");
+  }
+  entry.textContent = text;
+
+  container.prepend(entry);
+  const excess = container.children.length - maxEntries;
+  for (let i = 0; i < excess; i += 1) {
+    const last = container.lastElementChild;
+    if (last) {
+      container.removeChild(last);
+    }
+  }
+  container.scrollTop = 0;
+}
+
 function logEvent(message: string, level: "info" | "error" = "info") {
   const timestamp = new Date().toLocaleTimeString([], LOG_TIME_OPTIONS);
   const formatted = `[${timestamp}] ${message}`;
@@ -262,26 +299,8 @@ function logEvent(message: string, level: "info" | "error" = "info") {
     console.log(formatted);
   }
 
-  if (!logContainerEl) {
-    return;
-  }
-
-  const entry = document.createElement("div");
-  entry.className = "log-entry";
-  if (level === "error") {
-    entry.classList.add("log-entry-error");
-  }
-  entry.textContent = formatted;
-
-  logContainerEl.prepend(entry);
-  const excess = logContainerEl.children.length - MAX_LOG_ENTRIES;
-  for (let i = 0; i < excess; i += 1) {
-    const last = logContainerEl.lastElementChild;
-    if (last) {
-      logContainerEl.removeChild(last);
-    }
-  }
-  logContainerEl.scrollTop = 0;
+  appendLogEntry(logContainerEl, formatted, level, MAX_LOG_ENTRIES);
+  appendLogEntry(preflightLogEl, formatted, level, PREFLIGHT_MAX_LOG_ENTRIES);
 }
 
 function setWheelsLocked(locked: boolean) {
@@ -326,11 +345,18 @@ function setPreflightStatusText(text: string) {
   }
 }
 
+function setPreflightRetryEnabled(enabled: boolean) {
+  if (preflightRetryBtnEl) {
+    preflightRetryBtnEl.disabled = !enabled;
+  }
+}
+
 function resetPreflightState() {
   preflightState = {
     docker: "pending",
     dmr: "pending",
     models: "pending",
+    nanobanana: "pending",
     permissions: "pending",
   };
   PREFLIGHT_KEYS.forEach((key) => {
@@ -339,17 +365,17 @@ function resetPreflightState() {
   if (preflightPermissionsBtnEl) {
     preflightPermissionsBtnEl.disabled = true;
   }
-  if (preflightRetryBtnEl) {
-    preflightRetryBtnEl.classList.add("hidden");
-  }
+  setPreflightRetryEnabled(false);
   setPreflightStatusText("");
+  if (preflightLogEl) {
+    preflightLogEl.innerHTML = "";
+  }
 }
 
 function showPreflightFailure(message: string) {
   setPreflightStatusText(message);
-  if (preflightRetryBtnEl) {
-    preflightRetryBtnEl.classList.remove("hidden");
-  }
+  setPreflightRetryEnabled(true);
+  preflightRetryBtnEl?.focus();
   preflightInProgress = false;
 }
 
@@ -526,6 +552,63 @@ async function runPreflightChecks() {
     return;
   }
 
+  setPreflightState(
+    "nanobanana",
+    "running",
+    "Checking for a locally configured Nano Banana API key…",
+  );
+  setPreflightStatusText("Verifying Nano Banana API key configuration…");
+  logEvent("[Preflight] Checking for local Nano Banana API key…");
+  try {
+    const hasKey = await invoke<boolean>("has_nanobanana_key");
+    if (hasKey) {
+      setPreflightState(
+        "nanobanana",
+        "success",
+        "Nano Banana API key found in local settings or environment.",
+        "Ready",
+      );
+      logEvent("[Preflight] Nano Banana key check passed.");
+    } else {
+      setPreflightState(
+        "nanobanana",
+        "error",
+        'Add your Nano Banana API key by setting "nanobananaApiKey" in the companion settings file (see README) or exporting the NANOBANANA_API_KEY environment variable.',
+        "Key missing",
+      );
+      setPreflightStatusText(
+        "Configure a Nano Banana API key in the companion settings before continuing.",
+      );
+      logEvent(
+        "[Preflight] No Nano Banana API key configured locally. Blocking app launch.",
+        "error",
+      );
+      showPreflightFailure(
+        "Configure a Nano Banana API key locally, then retry the checks.",
+      );
+      return;
+    }
+  } catch (error) {
+    const message = formatError(error);
+    setPreflightState(
+      "nanobanana",
+      "error",
+      `Unable to verify Nano Banana API key configuration. Details: ${message}`,
+      "Error",
+    );
+    setPreflightStatusText(
+      "Resolve the Nano Banana API key error and retry.",
+    );
+    logEvent(
+      `[Preflight] Nano Banana key check errored: ${message}`,
+      "error",
+    );
+    showPreflightFailure(
+      "Resolve the Nano Banana API key error and retry.",
+    );
+    return;
+  }
+
   const preGranted = await hasGrantedMediaPermissions();
   if (preGranted) {
     logEvent(
@@ -557,9 +640,7 @@ async function runPreflightChecks() {
     preflightPermissionsBtnEl.disabled = false;
     preflightPermissionsBtnEl.focus();
   }
-  if (preflightRetryBtnEl) {
-    preflightRetryBtnEl.classList.add("hidden");
-  }
+  setPreflightRetryEnabled(false);
   preflightInProgress = false;
 }
 
@@ -2288,6 +2369,7 @@ async function initializeApp() {
   gestureStatusEl = query("gesture-status");
   activeWheelStatusEl = query("active-wheel-status");
   logContainerEl = query("event-log");
+  preflightLogEl = query("preflight-log");
 
   const preflightLookup: Record<
     PreflightKey,
@@ -2307,6 +2389,11 @@ async function initializeApp() {
       row: "preflight-models",
       status: "preflight-models-status",
       message: "preflight-models-message",
+    },
+    nanobanana: {
+      row: "preflight-nanobanana",
+      status: "preflight-nanobanana-status",
+      message: "preflight-nanobanana-message",
     },
     permissions: {
       row: "preflight-permissions",

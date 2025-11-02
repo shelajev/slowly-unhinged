@@ -57,7 +57,7 @@ Open your terminal and run the following commands (note, a pretty big download):
 
 ```bash
 docker model pull hf.co/ggml-org/ultravox-v0_5-llama-3_1-8b-gguf
-docker model pull hf.co/unsloth/gemma-3n-e2b-it-gguf:q8_k_xl
+docker model pull ai/qwen3-vl:2B-UD-Q4_K_XL
 ```
 
 ### Step 3: Download and Run the Application
@@ -92,7 +92,7 @@ Updates are picked up the next time the companion app loads the settings (on lau
 ## Models Used
 
 *   **Transcription**: `hf.co/ggml-org/ultravox-v0_5-llama-3_1-8b-gguf`
-*   **Prompt Generation**: `hf.co/unsloth/gemma-3n-e2b-it-gguf:q8_k_xl`
+*   **Prompt Generation**: `ai/qwen3-vl:2B-UD-Q4_K_XL`
 *   **Image Generation**: Google Gemini 2.5 Flash aka Nano Banana
 
 ## Development

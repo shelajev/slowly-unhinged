@@ -53,7 +53,7 @@ impl AppState {
 const HUB_URL: &str = "https://slowlyunhinged-hub-54127830651.us-central1.run.app";
 const DMR_BASE_URL: &str = "http://localhost:12434";
 const DEFAULT_TRANSCRIPTION_MODEL_ID: &str = "hf.co/ggml-org/ultravox-v0_5-llama-3_1-8b-gguf";
-const DEFAULT_BACKGROUND_PROMPT_MODEL_ID: &str = "hf.co/unsloth/gemma-3n-e2b-it-gguf:q8_k_xl";
+const DEFAULT_BACKGROUND_PROMPT_MODEL_ID: &str = "ai/qwen3-vl:2B-UD-Q4_K_XL";
 const BACKEND_PORT: u16 = 41786;const DMR_WARMUP_ATTEMPTS: usize = 10;
 const DMR_WARMUP_DELAY_MS: u64 = 1_000;
 const DMR_MODEL_POLL_ATTEMPTS: usize = 60;
@@ -450,8 +450,7 @@ async fn load_nanobanana_api_key(app: &AppHandle, state: &Arc<AppState>) -> Resu
             "Nano banana API key not configured. \
              Provide one by setting \"nanobananaApiKey\" in \"{}\", \
              exporting the NANOBANANA_API_KEY environment variable, \
-             placing the key in \"{}\", \
-             or ensuring the Hub delivers a default key.",
+             or placing the key in \"{}\".",
             settings_file.display(),
             path.display()
         )),
@@ -563,6 +562,11 @@ async fn load_wheel_state(app: AppHandle) -> Result<Option<WheelState>, String> 
 #[tauri::command]
 async fn get_settings(app: AppHandle) -> Result<Settings, String> {
     load_settings(&app)
+}
+
+#[tauri::command]
+async fn has_nanobanana_key(app: AppHandle) -> Result<bool, String> {
+    has_local_nanobanana_key(&app)
 }
 
 #[tauri::command]
@@ -700,6 +704,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             save_wheel_state,
             load_wheel_state,
             get_settings,
+            has_nanobanana_key,
             generate_background_image
         ])
         .run(tauri::generate_context!())?;

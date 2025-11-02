@@ -148,6 +148,17 @@ button {
   .preflight-item-message {
     color: rgba(246, 246, 246, 0.68);
   }
+  .preflight-log-section {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .preflight-log-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgba(246, 246, 246, 0.92);
+  }
   .preflight-item[data-state="running"] {
     box-shadow:
       0 0 0 2px rgba(37, 99, 235, 0.35),

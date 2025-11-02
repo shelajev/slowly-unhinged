@@ -9,14 +9,14 @@ The system consists of three distinct components that work in concert:
     *   Handling the Zoom OAuth flow to authenticate users.
     *   Acting as a **matchmaker**: storing, refreshing, and retrieving the live tunnel URL for each registered user, with a five-minute inactivity TTL enforced via a `lastSeenAt` timestamp.
     *   Proxying background imagery from the companion's Cloudflare tunnel so the Zoom App never calls the tunnel domain directly.
-    *   Supplying a default nanobanana API key sourced from Secret Manager to agents that opt in during tunnel registration.
+    *   (Temporarily disabled until 2024-11-14) Supplying a default nanobanana API key sourced from Secret Manager to agents that opt in during tunnel registration.
 
 2.  **The Local Agent (Native Companion App):** A native macOS application (built with Tauri) that the user installs. It runs silently in the background and manages the user's local processing infrastructure. Its responsibilities are:
     *   Prompting the user for their Zoom screen name on first launch to use as a unique identifier.
     *   Managing the lifecycle of the local Docker containers using the `testcontainers` Rust library.
     *   Starting a Cloudflare Tunnel to create a secure, public URL for the local services.
     *   **Registering** its live tunnel URL with the Central Hub, associating it with the user's screen name.
-    *   Receiving the Hub-provided nanobanana key over the tunnel (when no local key is present) and retaining it only in volatile memory.
+    *   Verifying a Nano Banana API key is configured locally before registration and retaining it only in volatile memory when loaded.
     *   Capturing on-demand microphone samples, orchestrating local inference for transcription and virtual background prompt generation, and surfacing those results in the companion UI.
 
 3.  **The Zoom Client (Zoom App Frontend):** A standard web application (HTML/JS/CSS) that runs in a webview inside the Zoom client. This is the user-facing component during a meeting. Its responsibilities are:
@@ -37,7 +37,7 @@ The Central Hub will be deployed on the Google Cloud Platform (GCP) using a serv
 The Companion App manages a Docker Model Runner (DMR) instance that exposes inference endpoints on `http://localhost:12434`. Through this single runtime, the app loads and serves multiple GGUF models:
 
 * `hf.co/ggml-org/ultravox-v0_5-llama-3_1-8b-gguf` for speech-to-text transcription of 12-second microphone samples.
-* `hf.co/unsloth/gemma-3n-e2b-it-gguf:q8_k_xl` for transforming transcripts into vivid virtual background prompts.
+* `ai/qwen3-vl:2B-UD-Q4_K_XL` for transforming transcripts into vivid virtual background prompts.
 
 Both models use the same llama.cpp-compatible `/engines/llama.cpp/v1/chat/completions` API surface, enabling consistent request/response handling across tasks.
 
@@ -63,4 +63,4 @@ This loop can be repeated during the meeting, giving participants bespoke virtua
 
 ## Gemini API Key Handling
 
-The key is resolved first from the desktop app's `settings.json` (for example, `~/Library/Application Support/com.slowlyunhinged.agent/settings.json`) where users can supply `nanobananaApiKey`. If no override is present, the runtime consults the `NANOBANANA_API_KEY` environment variable. As a last resort, the legacy plaintext `nanobanana_api_key.txt` in the config directory is read. 
+The key is resolved first from the desktop app's `settings.json` (for example, `~/Library/Application Support/com.slowlyunhinged.agent/settings.json`) where users can supply `nanobananaApiKey`. If no override is present, the runtime consults the `NANOBANANA_API_KEY` environment variable. As a last resort, the legacy plaintext `nanobanana_api_key.txt` in the config directory is read. The companion's preflight checks now block the UI until one of these sources is populated. 

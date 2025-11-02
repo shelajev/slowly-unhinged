@@ -22,8 +22,9 @@ if (zoomClientSecret) {
     )}`,
   );
 }
+const HUB_DEFAULT_NANOBANANA_RETURN_DATE = "2024-11-14";
 console.log(
-  `[Hub] Default nanobanana key configured: ${hasDefaultNanobananaKey() ? "yes" : "no"}`,
+  `[Hub] Hub-delivered nanobanana key is disabled (target return: ${HUB_DEFAULT_NANOBANANA_RETURN_DATE}).`,
 );
 
 // --- App Setup ---
@@ -56,60 +57,6 @@ function normalizeScreenName(input) {
     return "";
   }
   return input.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function hasDefaultNanobananaKey() {
-  const fromHub = process.env.HUB_NANOBANANA_API_KEY;
-  if (fromHub && fromHub.trim()) {
-    return true;
-  }
-  const fallback = process.env.NANOBANANA_API_KEY;
-  return Boolean(fallback && fallback.trim());
-}
-
-async function deliverDefaultNanobananaKey(tunnelUrl) {
-  const secret =
-    process.env.HUB_NANOBANANA_API_KEY?.trim() ||
-    process.env.NANOBANANA_API_KEY?.trim();
-  if (!secret) {
-    throw new Error("Default nanobanana key is not configured on the Hub.");
-  }
-
-  const tunnelBase = tunnelUrl.replace(/\/$/, "");
-  const requestUrl = `${tunnelBase}/internal/secrets/nanobanana`;
-
-  const maxAttempts = 15;
-  let attempt = 0;
-  let lastError;
-
-  await new Promise((resolve) => setTimeout(resolve, 2_000));
-
-  while (attempt < maxAttempts) {
-    try {
-      await axios.post(
-        requestUrl,
-        { secret },
-        {
-          timeout: 12_000,
-        },
-      );
-      console.log(
-        `[Hub] Default nanobanana key delivered to ${tunnelBase}/internal/secrets/nanobanana (attempt ${attempt + 1})`,
-      );
-      return;
-    } catch (error) {
-      lastError = error;
-      attempt += 1;
-      const delayMs = Math.min(12_000, 1_000 * attempt);
-      console.warn(`[Hub] Attempt ${attempt} to deliver tunnel secret failed.`);
-      if (attempt >= maxAttempts) {
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-
-  throw lastError || new Error("Unknown error delivering default nanobanana key.");
 }
 
 async function getActiveAgent(normalizedScreenName) {
@@ -190,6 +137,18 @@ app.post("/api/register-agent", async (req, res) => {
     const now = Timestamp.now();
     const needsDefaultNanobananaKey =
       Boolean(requiresNanobananaKey) && !hasLocalNanobananaKey;
+
+    if (needsDefaultNanobananaKey) {
+      console.warn(
+        `[Hub] Rejecting agent registration for "${normalizedScreenName}" – local nanobanana key missing and hub delivery is disabled until ${HUB_DEFAULT_NANOBANANA_RETURN_DATE}.`,
+      );
+      return res.status(400).json({
+        error:
+          "A Nano Banana API key must be configured locally before starting the companion app. Update settings and retry.",
+        nextAvailable: HUB_DEFAULT_NANOBANANA_RETURN_DATE,
+      });
+    }
+
     await agentRef.set({
       tunnelUrl,
       registeredAt: now,
@@ -197,30 +156,8 @@ app.post("/api/register-agent", async (req, res) => {
       screenNameOriginal: screenName,
       requiresNanobananaKey: Boolean(requiresNanobananaKey),
       hasLocalNanobananaKey: Boolean(hasLocalNanobananaKey),
-      usesHubNanobananaKey: needsDefaultNanobananaKey,
+      usesHubNanobananaKey: false,
     });
-
-    if (needsDefaultNanobananaKey) {
-      try {
-        await deliverDefaultNanobananaKey(tunnelUrl);
-      } catch (deliveryError) {
-        console.error(
-          `[Hub] Failed to deliver default nanobanana key to "${normalizedScreenName}":`,
-          deliveryError,
-        );
-        try {
-          await agentRef.delete();
-        } catch (cleanupError) {
-          console.warn(
-            `[Hub] Failed to clean up agent record for "${normalizedScreenName}" after secret delivery error:`,
-            cleanupError,
-          );
-        }
-        return res.status(500).json({
-          error: "Failed to deliver default nanobanana key from Hub.",
-        });
-      }
-    }
 
     res.status(200).json({ message: "Agent registered successfully." });
   } catch (error) {

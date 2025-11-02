@@ -19,7 +19,7 @@ The app persists user preferences and runtime state in `~/Library/Application Su
 
 - `model_transcription`: ID of the Docker Model Runner speech model. Update this to switch the transcription engine.
 - `model_prompt`: ID of the prompt-generation model served by Docker Model Runner.
-- `nanobanana_api_key`: Optional API key stored locally for Nano Banana image generation.
+- `nanobanana_api_key`: API key stored locally for Nano Banana image generation. The companion blocks startup until this value (or the `NANOBANANA_API_KEY` environment variable / `nanobanana_api_key.txt`) is provided.
 - `wheels`: Internal state for the on-screen name wheels (`positions` array and `active_index`). You can reset the wheels by deleting this block or removing the settings file.
 
 Changes take effect the next time the companion app loads the settings (on launch).
